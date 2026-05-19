@@ -1,4 +1,5 @@
 # Logs
+.parcel-cache
 logs
 *.log
 npm-debug.log*

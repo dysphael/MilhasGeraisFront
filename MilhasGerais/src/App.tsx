@@ -3,6 +3,7 @@ import { useAuth } from './contexts/AuthContext';
 import { LoginScreen } from './components/LoginScreen';
 import { HomeScreen } from './components/HomeScreen';
 import { GraphsScreen } from './components/GraphsScreen';
+import { MilesQuotesScreen } from './components/MilesQuotesScreen';
 
 export default function App() {
   const { isAuthenticated, isLoading, logout } = useAuth();
@@ -32,9 +33,11 @@ export default function App() {
         path="/graphs"
         element={isAuthenticated ? <GraphsScreen onLogout={logout} /> : <Navigate to="/login" />}
       />
+      <Route
+        path="/cotacoes"
+        element={isAuthenticated ? <MilesQuotesScreen onLogout={logout} /> : <Navigate to="/login" />}
+      />
       <Route path="/" element={<Navigate to={isAuthenticated ? '/home' : '/login'} />} />
     </Routes>
   );
 }
-
-

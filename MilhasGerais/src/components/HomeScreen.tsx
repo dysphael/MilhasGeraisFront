@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Plus, ArrowRightLeft, History, TrendingUp, Target, AlertCircle, Clock, BarChart3, LogOut } from 'lucide-react';
+import { Bell, Plus, ArrowRightLeft, History, TrendingUp, Target, AlertCircle, Clock, BarChart3, LogOut, Tag } from 'lucide-react';
 import {
   BarChart,
   Bar,
@@ -34,7 +34,6 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
         setDashboard(data);
         setError(null);
       } catch (err: any) {
-        console.error('Error fetching dashboard:', err);
         setError('Erro ao carregar dados do dashboard');
       } finally {
         setIsLoading(false);
@@ -88,10 +87,7 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
               <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
             </button>
             <button
-              onClick={() => {
-                onLogout();
-                navigate('/login');
-              }}
+              onClick={() => { onLogout(); navigate('/login'); }}
               className="p-2 hover:bg-gray-100 rounded-full transition-colors"
               title="Sair"
             >
@@ -102,7 +98,8 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-        {/* Total de milhas */}
+
+        {/* Saldo total */}
         <div className="bg-gradient-to-br from-[#054A91] to-[#6EA4BF] rounded-3xl p-6 text-white shadow-xl">
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -117,8 +114,6 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
               <TrendingUp className="w-6 h-6" />
             </button>
           </div>
-
-          {/* Meta */}
           <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 mt-4">
             <div className="flex items-center gap-2 mb-2">
               <Target className="w-4 h-4" />
@@ -143,19 +138,18 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
                     : 'bg-[#C2EFEB]/50 border border-[#6EA4BF]/30'
                 }`}
               >
-                {alert.type === 'warning' ? (
-                  <Clock className="w-5 h-5 text-orange-600 mt-0.5" />
-                ) : (
-                  <AlertCircle className="w-5 h-5 text-[#054A91] mt-0.5" />
-                )}
+                {alert.type === 'warning'
+                  ? <Clock className="w-5 h-5 text-orange-600 mt-0.5" />
+                  : <AlertCircle className="w-5 h-5 text-[#054A91] mt-0.5" />
+                }
                 <p className="text-sm text-gray-700 flex-1">{alert.text}</p>
               </div>
             ))}
           </div>
         )}
 
-        {/* Atalhos rápidos */}
-        <div className="grid grid-cols-3 gap-3">
+        {/* Atalhos rápidos — agora com 4 botões incluindo Cotações */}
+        <div className="grid grid-cols-4 gap-3">
           <button className="bg-white p-4 rounded-2xl shadow-sm hover:shadow-md transition-all flex flex-col items-center gap-2">
             <div className="w-12 h-12 bg-[#C2EFEB] rounded-full flex items-center justify-center">
               <Plus className="w-6 h-6 text-[#054A91]" />
@@ -175,6 +169,16 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
               <History className="w-6 h-6 text-[#748944]" />
             </div>
             <span className="text-xs text-gray-700 text-center">Histórico</span>
+          </button>
+
+          <button
+            onClick={() => navigate('/cotacoes')}
+            className="bg-white p-4 rounded-2xl shadow-sm hover:shadow-md transition-all flex flex-col items-center gap-2"
+          >
+            <div className="w-12 h-12 bg-orange-50 rounded-full flex items-center justify-center">
+              <Tag className="w-6 h-6 text-orange-500" />
+            </div>
+            <span className="text-xs text-gray-700 text-center">Cotações</span>
           </button>
         </div>
 
@@ -204,7 +208,7 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
           </div>
         </div>
 
-        {/* Gráfico de visão rápida */}
+        {/* Gráfico rápido */}
         <div className="bg-white rounded-2xl p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
@@ -215,8 +219,7 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
               onClick={() => navigate('/graphs')}
               className="text-sm text-[#054A91] hover:text-[#6EA4BF] transition-colors flex items-center gap-1"
             >
-              Ver mais
-              <TrendingUp className="w-4 h-4" />
+              Ver mais <TrendingUp className="w-4 h-4" />
             </button>
           </div>
           <ResponsiveContainer width="100%" height={250}>
@@ -224,15 +227,9 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis dataKey="name" stroke="#666" fontSize={12} />
               <YAxis stroke="#666" fontSize={12} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: '#fff',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '8px',
-                }}
-              />
+              <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }} />
               <Bar dataKey="miles" radius={[8, 8, 0, 0]}>
-                {dashboard.programas.map((program, index) => (
+                {dashboard.programas.map((_, index) => (
                   <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#6EA4BF' : '#054A91'} />
                 ))}
               </Bar>
@@ -247,37 +244,27 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
             {dashboard.transacoes.map((transaction: Transacao) => (
               <div key={transaction.id} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
                 <div className="flex items-center gap-3">
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      transaction.type === 'credit'
-                        ? 'bg-green-100'
-                        : transaction.type === 'debit'
-                        ? 'bg-red-100'
-                        : 'bg-[#C2EFEB]'
-                    }`}
-                  >
-                    {transaction.type === 'credit' && <span className="text-green-600">+</span>}
-                    {transaction.type === 'debit' && <span className="text-red-600">-</span>}
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                    transaction.type === 'credit' ? 'bg-green-100'
+                    : transaction.type === 'debit' ? 'bg-red-100'
+                    : 'bg-[#C2EFEB]'
+                  }`}>
+                    {transaction.type === 'credit'   && <span className="text-green-600">+</span>}
+                    {transaction.type === 'debit'    && <span className="text-red-600">-</span>}
                     {transaction.type === 'transfer' && <ArrowRightLeft className="w-4 h-4 text-[#054A91]" />}
                   </div>
                   <div>
                     <p className="text-sm text-gray-800">{transaction.description}</p>
-                    <p className="text-xs text-gray-500">
-                      {transaction.program} • {transaction.date}
-                    </p>
+                    <p className="text-xs text-gray-500">{transaction.program} • {transaction.date}</p>
                   </div>
                 </div>
-                <p
-                  className={`${
-                    transaction.type === 'credit'
-                      ? 'text-green-600'
-                      : transaction.type === 'debit'
-                      ? 'text-red-600'
-                      : 'text-[#054A91]'
-                  }`}
-                >
-                  {transaction.type === 'credit' && '+'}
-                  {transaction.type === 'debit' && '-'}
+                <p className={`${
+                  transaction.type === 'credit'   ? 'text-green-600'
+                  : transaction.type === 'debit'  ? 'text-red-600'
+                  : 'text-[#054A91]'
+                }`}>
+                  {transaction.type === 'credit'  && '+'}
+                  {transaction.type === 'debit'   && '-'}
                   {transaction.amount.toLocaleString('pt-BR')}
                 </p>
               </div>
