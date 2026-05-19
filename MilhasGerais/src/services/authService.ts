@@ -3,54 +3,55 @@ import { LoginResponse, User } from '../types';
 
 const DEV_MODE = import.meta.env.VITE_DEV_MODE === 'true';
 
-// ─── Helpers de mock (só usados com VITE_DEV_MODE=true) ───────────
-const generateFakeToken = () => 'dev_token_' + Math.random().toString(36).slice(2, 11);
+const generateFakeToken = (user: User) =>
+  `dev_${user.id}_${Math.random().toString(36).slice(2, 11)}`;
 
-const getMockUser = (email: string): User => {
-  const name = email.split('@')[0];
-  return {
-    id: 100,   // Ana Silva (primeiro seed do banco)
-    name: name.charAt(0).toUpperCase() + name.slice(1),
-    email,
-  };
+const persist = (token: string, user: User) => {
+  localStorage.setItem('token', token);
+  localStorage.setItem('user', JSON.stringify(user));
 };
 
-// ─── Service ──────────────────────────────────────────────────────
 export const authService = {
-  /**
-   * Login do usuário.
-   * Em DEV_MODE, aceita qualquer email/senha e usa o usuário seed id=100.
-   * Em produção, chama POST /api/users/login (implemente o endpoint quando adicionar autenticação).
-   *
-   * NOTA: O backend atual não tem autenticação JWT. Quando implementar,
-   * substitua a chamada abaixo pelo endpoint correto e remova DEV_MODE.
-   */
-  login: async (email: string, password: string): Promise<LoginResponse> => {
+  // POST /api/auth/register
+  register: async (name: string, email: string, password: string, confirmPassword: string): Promise<LoginResponse> => {
     if (DEV_MODE) {
-      const user = getMockUser(email);
-      const token = generateFakeToken();
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
+      await new Promise(r => setTimeout(r, 600));
+      const user: User = { id: Date.now(), name, email };
+      const token = generateFakeToken(user);
+      persist(token, user);
       return { token, user };
     }
 
-    // Produção — endpoint a implementar no backend
-    const response = await api.post<LoginResponse>('/users/login', { email, password });
-    if (response.data.token) {
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
+    const response = await api.post<LoginResponse>('/auth/register', {
+      name, email, password, confirmPassword,
+    });
+    persist(response.data.token, response.data.user);
+    return response.data;
+  },
+
+  // POST /api/auth/login
+  login: async (email: string, password: string): Promise<LoginResponse> => {
+    if (DEV_MODE) {
+      await new Promise(r => setTimeout(r, 500));
+      const name = email.split('@')[0];
+      const user: User = {
+        id: 100,
+        name: name.charAt(0).toUpperCase() + name.slice(1),
+        email,
+      };
+      const token = generateFakeToken(user);
+      persist(token, user);
+      return { token, user };
     }
+
+    const response = await api.post<LoginResponse>('/auth/login', { email, password });
+    persist(response.data.token, response.data.user);
     return response.data;
   },
 
   logout: async (): Promise<void> => {
-    try {
-      if (!DEV_MODE) await api.post('/users/logout');
-    } catch { /* ignora erro de rede no logout */ }
-    finally {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-    }
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
   },
 
   isAuthenticated: (): boolean => !!localStorage.getItem('token'),

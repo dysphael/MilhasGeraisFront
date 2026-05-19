@@ -7,23 +7,25 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-  login: (email: string, password: string) => Promise<any>;
+  login: (email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string, confirmPassword: string) => Promise<void>;
   logout: () => Promise<void>;
+  clearError: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser]                   = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading]         = useState(true);
+  const [error, setError]                 = useState<string | null>(null);
 
-  // Restaurar sessão ao carregar
+  // Restaura sessão ao inicializar
   useEffect(() => {
-    const storedUser = authService.getStoredUser();
-    if (storedUser && authService.isAuthenticated()) {
-      setUser(storedUser);
+    const stored = authService.getStoredUser();
+    if (stored && authService.isAuthenticated()) {
+      setUser(stored);
       setIsAuthenticated(true);
     }
     setIsLoading(false);
@@ -33,43 +35,53 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await authService.login(email, password);
-      setUser(response.user);
+      const { user } = await authService.login(email, password);
+      setUser(user);
       setIsAuthenticated(true);
-      return response;
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 'Falha ao fazer login';
-      setError(errorMessage);
-      throw err;
+      const msg = err.response?.data?.message || 'E-mail ou senha inválidos.';
+      setError(msg);
+      throw new Error(msg);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const register = useCallback(async (
+    name: string, email: string, password: string, confirmPassword: string
+  ) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const { user } = await authService.register(name, email, password, confirmPassword);
+      setUser(user);
+      setIsAuthenticated(true);
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Erro ao criar conta. Tente novamente.';
+      setError(msg);
+      throw new Error(msg);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
   const logout = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      await authService.logout();
-      setUser(null);
-      setIsAuthenticated(false);
-    } catch (err: any) {
-      setError('Falha ao fazer logout');
-    } finally {
-      setIsLoading(false);
-    }
+    await authService.logout();
+    setUser(null);
+    setIsAuthenticated(false);
   }, []);
 
+  const clearError = useCallback(() => setError(null), []);
+
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, isLoading, error, login, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, isLoading, error, login, register, logout, clearError }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth deve ser usado dentro de AuthProvider');
-  }
-  return context;
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth deve ser usado dentro de AuthProvider');
+  return ctx;
 };
