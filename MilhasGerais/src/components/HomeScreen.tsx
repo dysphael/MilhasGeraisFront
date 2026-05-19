@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Plus, ArrowRightLeft, History, TrendingUp, Target, AlertCircle, Clock, BarChart3, Tag } from 'lucide-react';
+import { Bell, Plus, ArrowRightLeft, History, TrendingUp, Target, AlertCircle, Clock, BarChart3, Tag, CreditCard as CreditCardIcon } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useAuth } from '../hooks/useAuth';
 import { dashboardService } from '../services/dashboardService';
-import { DashboardResumo, DashboardPrograma, DashboardTransacao, DashboardAlert } from '../types';
+import { creditCardService } from '../services/creditCardService';
+import { DashboardResumo, DashboardPrograma, DashboardTransacao, DashboardAlert, CreditCard } from '../types';
 import { AddTransactionModal } from './AddTransactionModal';
+import { AddCreditCardModal } from './AddCreditCardModal';
 import { PageBackground, AppHeader, LoadingPage, ErrorPage } from './Layout';
 
 interface HomeScreenProps { onLogout: () => void; }
@@ -19,6 +21,8 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError]         = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showCardModal, setShowCardModal] = useState(false);
+  const [cards, setCards] = useState<CreditCard[]>([]);
 
   const loadDashboard = () => {
     dashboardService.obterResumo()
@@ -27,7 +31,13 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
       .finally(() => setIsLoading(false));
   };
 
-  useEffect(() => { loadDashboard(); }, []);
+  const loadCards = () => {
+    creditCardService.listar()
+      .then(all => setCards(user ? all.filter(c => c.userId === user.id) : all))
+      .catch(() => { /* silencioso — falha não bloqueia o dashboard */ });
+  };
+
+  useEffect(() => { loadDashboard(); loadCards(); }, [user?.id]);
 
   if (isLoading) return <LoadingPage message="Carregando dados..." />;
   if (error || !dashboard) return <ErrorPage message={error || 'Erro ao carregar dados'} />;
@@ -94,7 +104,7 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
         <div className="grid grid-cols-4 gap-3">
           {[
             { icon: <Plus className="w-6 h-6 text-[#1B3A5C]" />,            label: 'Adicionar', bg: 'bg-[#EEF3F8]', onClick: () => setShowAddModal(true) },
-            { icon: <ArrowRightLeft className="w-6 h-6 text-[#6B9FBF]" />,  label: 'Transferir', bg: 'bg-[#EEF3F8]' },
+            { icon: <CreditCardIcon className="w-6 h-6 text-[#1B3A5C]" />,  label: 'Cartões',   bg: 'bg-[#EEF3F8]', onClick: () => setShowCardModal(true) },
             { icon: <History className="w-6 h-6 text-[#2C2C2C]" />,         label: 'Histórico', bg: 'bg-[#EDE9E4]' },
             { icon: <Tag className="w-6 h-6 text-[#C5A46A]" />,              label: 'Cotações',  bg: 'bg-[#FDF6EE]', onClick: () => navigate('/cotacoes') },
           ].map(({ icon, label, bg, onClick }) => (
@@ -106,6 +116,44 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
               <span className="text-xs text-[#7A7A7A] text-center">{label}</span>
             </button>
           ))}
+        </div>
+
+        {/* Meus cartões */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg text-white">Meus cartões</h3>
+            <button onClick={() => setShowCardModal(true)}
+              className="text-sm text-white/90 hover:text-white flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/15 hover:bg-white/25 transition-all">
+              <Plus className="w-4 h-4" /> Adicionar
+            </button>
+          </div>
+          {cards.length === 0 ? (
+            <div className="bg-white/90 backdrop-blur-sm border border-white/50 rounded-2xl p-6 text-center">
+              <CreditCardIcon className="w-8 h-8 text-[#B0A99F] mx-auto mb-2" />
+              <p className="text-sm text-[#7A7A7A]">Você ainda não tem cartões cadastrados.</p>
+              <button onClick={() => setShowCardModal(true)}
+                className="mt-3 px-4 py-2 rounded-xl bg-[#1B3A5C] text-white text-sm hover:bg-[#2A527A] transition-colors">
+                Adicionar cartão
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {cards.map(card => (
+                <div key={card.id}
+                  className="bg-white/90 backdrop-blur-sm border border-white/50 rounded-2xl p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-[#EEF3F8] rounded-xl flex items-center justify-center">
+                      <CreditCardIcon className="w-6 h-6 text-[#1B3A5C]" />
+                    </div>
+                    <div>
+                      <p className="text-[#2C2C2C]">{card.brand}</p>
+                      <p className="text-xs text-[#7A7A7A]">final {card.cardNumber.slice(-4)}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Programas */}
@@ -200,6 +248,12 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
         open={showAddModal}
         onClose={() => setShowAddModal(false)}
         onCreated={loadDashboard}
+      />
+
+      <AddCreditCardModal
+        open={showCardModal}
+        onClose={() => setShowCardModal(false)}
+        onCreated={loadCards}
       />
     </PageBackground>
   );

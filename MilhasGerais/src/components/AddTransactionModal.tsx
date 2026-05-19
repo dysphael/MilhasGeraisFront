@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { X, CreditCard as CreditCardIcon, Calendar, DollarSign, Plane, Loader, XCircle } from 'lucide-react';
+import { X, CreditCard as CreditCardIcon, Calendar, DollarSign, Plane, Loader, XCircle, Plus } from 'lucide-react';
 import { creditCardService } from '../services/creditCardService';
 import { rewardTransactionService } from '../services/rewardTransactionService';
 import { CreditCard } from '../types';
 import { useAuth } from '../hooks/useAuth';
+import { AddCreditCardModal } from './AddCreditCardModal';
 
 interface AddTransactionModalProps {
   open: boolean;
@@ -25,6 +26,20 @@ export function AddTransactionModal({ open, onClose, onCreated }: AddTransaction
   const [fieldErrors, setFieldErrors]   = useState<Record<string, string>>({});
   const [submitError, setSubmitError]   = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showCardModal, setShowCardModal] = useState(false);
+
+  const reloadCards = () => {
+    setLoadingCards(true);
+    return creditCardService.listar()
+      .then(all => {
+        const mine = user ? all.filter(c => c.userId === user.id) : all;
+        setCards(mine);
+        if (mine.length === 1) setCreditCardId(mine[0].id);
+        else if (mine.length > 1 && !creditCardId) setCreditCardId(mine[mine.length - 1].id);
+      })
+      .catch(() => setSubmitError('Não foi possível carregar seus cartões.'))
+      .finally(() => setLoadingCards(false));
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -36,15 +51,7 @@ export function AddTransactionModal({ open, onClose, onCreated }: AddTransaction
     setDate(new Date().toISOString().slice(0, 10));
     setCreditCardId('');
 
-    setLoadingCards(true);
-    creditCardService.listar()
-      .then(all => {
-        const mine = user ? all.filter(c => c.userId === user.id) : all;
-        setCards(mine);
-        if (mine.length === 1) setCreditCardId(mine[0].id);
-      })
-      .catch(() => setSubmitError('Não foi possível carregar seus cartões.'))
-      .finally(() => setLoadingCards(false));
+    reloadCards();
   }, [open, user]);
 
   if (!open) return null;
@@ -133,6 +140,10 @@ export function AddTransactionModal({ open, onClose, onCreated }: AddTransaction
             {!loadingCards && cards.length === 0 && (
               <p className="mt-1 text-xs text-[#7A7A7A]">Você ainda não tem cartões cadastrados.</p>
             )}
+            <button type="button" onClick={() => setShowCardModal(true)} disabled={isSubmitting}
+              className="mt-2 inline-flex items-center gap-1 text-xs text-[#1B3A5C] hover:text-[#2A527A] transition-colors disabled:opacity-50">
+              <Plus className="w-3.5 h-3.5" /> Adicionar novo cartão
+            </button>
           </div>
 
           {/* Data */}
@@ -186,6 +197,12 @@ export function AddTransactionModal({ open, onClose, onCreated }: AddTransaction
           </div>
         </form>
       </div>
+
+      <AddCreditCardModal
+        open={showCardModal}
+        onClose={() => setShowCardModal(false)}
+        onCreated={reloadCards}
+      />
     </div>
   );
 }
