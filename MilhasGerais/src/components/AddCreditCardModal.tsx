@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { X, CreditCard as CreditCardIcon, Building2, Loader, XCircle } from 'lucide-react';
+import { X, CreditCard as CreditCardIcon, Building2, Plane, Loader, XCircle } from 'lucide-react';
 import { creditCardService } from '../services/creditCardService';
 import { useAuth } from '../hooks/useAuth';
+import { LoyaltyProgram } from '../types';
 
 interface AddCreditCardModalProps {
   open: boolean;
@@ -10,6 +11,16 @@ interface AddCreditCardModalProps {
 }
 
 const BRANDS = ['Visa', 'Mastercard', 'Elo', 'American Express', 'Hipercard', 'Outro'];
+
+const PROGRAMS: { value: LoyaltyProgram; label: string }[] = [
+  { value: 'Smiles',    label: 'Smiles (Gol)'      },
+  { value: 'Latam',     label: 'Latam Pass'         },
+  { value: 'Azul',      label: 'TudoAzul'           },
+  { value: 'Multiplus', label: 'Multiplus'          },
+  { value: 'Livelo',    label: 'Livelo'             },
+  { value: 'Esfera',    label: 'Esfera (Santander)' },
+  { value: 'Other',     label: 'Outro'              },
+];
 
 // Formata o número do cartão em grupos de 4: "1234 5678 9012 3456".
 function formatCardNumber(raw: string): string {
@@ -22,6 +33,7 @@ export function AddCreditCardModal({ open, onClose, onCreated }: AddCreditCardMo
 
   const [cardNumber, setCardNumber] = useState('');
   const [brand, setBrand]           = useState('');
+  const [program, setProgram]       = useState<LoyaltyProgram | ''>('');
 
   const [fieldErrors, setFieldErrors]   = useState<Record<string, string>>({});
   const [submitError, setSubmitError]   = useState<string | null>(null);
@@ -31,6 +43,7 @@ export function AddCreditCardModal({ open, onClose, onCreated }: AddCreditCardMo
     if (!open) return;
     setCardNumber('');
     setBrand('');
+    setProgram('');
     setFieldErrors({});
     setSubmitError(null);
   }, [open]);
@@ -60,6 +73,7 @@ export function AddCreditCardModal({ open, onClose, onCreated }: AddCreditCardMo
         userId: user.id,
         cardNumber: cardNumber.replace(/\D/g, ''),
         brand,
+        program: program || null,
       });
       onCreated?.();
       onClose();
@@ -126,6 +140,24 @@ export function AddCreditCardModal({ open, onClose, onCreated }: AddCreditCardMo
               </select>
             </div>
             {fieldErrors.brand && <p className="mt-1 text-xs text-red-500">{fieldErrors.brand}</p>}
+          </div>
+
+          {/* Programa de pontos */}
+          <div>
+            <label htmlFor="program" className="block text-sm text-[#2C2C2C] mb-1.5">
+              Programa de pontos <span className="text-[#B0A99F] text-xs">(opcional)</span>
+            </label>
+            <div className="relative">
+              <Plane className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#7A7A7A]" />
+              <select id="program" value={program}
+                onChange={e => setProgram(e.target.value as LoyaltyProgram | '')}
+                disabled={isSubmitting}
+                className={`${inputBase} pl-12 pr-4 appearance-none ${inputOk}`}>
+                <option value="">Nenhum / não sei</option>
+                {PROGRAMS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+              </select>
+            </div>
+            <p className="mt-1 text-xs text-[#7A7A7A]">A qual programa esse cartão credita pontos.</p>
           </div>
 
           <div className="flex gap-3 pt-2">

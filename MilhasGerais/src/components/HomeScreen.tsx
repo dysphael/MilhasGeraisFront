@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Plus, ArrowRightLeft, History, TrendingUp, AlertCircle, Clock, Tag } from 'lucide-react';
+import { Bell, Plus, ArrowRightLeft, History, TrendingUp, AlertCircle, Clock, Tag, CreditCard as CreditCardIcon } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { dashboardService } from '../services/dashboardService';
-import { DashboardResumo, DashboardPrograma, DashboardTransacao, DashboardAlert } from '../types';
+import { creditCardService } from '../services/creditCardService';
+import { DashboardResumo, DashboardPrograma, DashboardTransacao, DashboardAlert, CreditCard } from '../types';
 import { PageBackground, AppHeader, LoadingPage, ErrorPage } from './Layout';
 import { AdicionarMilhasModal } from './modals/AdicionarMilhasModal';
 import { TransferirMilhasModal } from './modals/TransferirMilhasModal';
+import { AddCreditCardModal } from './AddCreditCardModal';
 
 interface HomeScreenProps { onLogout: () => void; }
 
@@ -19,6 +21,8 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError]         = useState<string | null>(null);
   const [modalAberto, setModalAberto] = useState<ModalAberto>(null);
+  const [showCardModal, setShowCardModal] = useState(false);
+  const [cards, setCards] = useState<CreditCard[]>([]);
 
   const carregarDashboard = () => {
     setIsLoading(true);
@@ -28,7 +32,14 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
       .finally(() => setIsLoading(false));
   };
 
-  useEffect(() => { carregarDashboard(); }, []);
+  const carregarCartoes = () => {
+    if (!user) return;
+    creditCardService.listar()
+      .then(all => setCards(all.filter(c => c.userId === user.id)))
+      .catch(() => { /* silencioso — não bloqueia o dashboard */ });
+  };
+
+  useEffect(() => { carregarDashboard(); carregarCartoes(); }, [user?.id]);
 
   if (isLoading) return <LoadingPage message="Carregando dados..." />;
   if (error || !dashboard) return <ErrorPage message={error || 'Erro ao carregar dados'} />;
@@ -52,6 +63,11 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
           programas={dashboard.programas}
         />
       )}
+      <AddCreditCardModal
+        open={showCardModal}
+        onClose={() => setShowCardModal(false)}
+        onCreated={carregarCartoes}
+      />
 
       <AppHeader
         title={`Olá, ${user?.name || 'Usuário'}`}
@@ -133,6 +149,48 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
               <span className="text-xs text-[#7A7A7A] text-center">{label}</span>
             </button>
           ))}
+        </div>
+
+        {/* Meus cartões */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg text-white">Meus cartões</h3>
+            <button onClick={() => setShowCardModal(true)}
+              className="text-sm text-white/90 hover:text-white flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/15 hover:bg-white/25 transition-all"
+              aria-label="Adicionar cartão">
+              <Plus className="w-4 h-4" /> Adicionar
+            </button>
+          </div>
+          {cards.length === 0 ? (
+            <div className="bg-white/90 backdrop-blur-sm border border-white/50 rounded-2xl p-6 text-center shadow-md">
+              <CreditCardIcon className="w-8 h-8 text-[#B0A99F] mx-auto mb-2" />
+              <p className="text-sm text-[#7A7A7A]">Você ainda não tem cartões cadastrados.</p>
+              <button onClick={() => setShowCardModal(true)}
+                className="mt-3 px-4 py-2 rounded-xl bg-[#1B3A5C] text-white text-sm hover:bg-[#2A527A] transition-colors">
+                Adicionar cartão
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {cards.map(card => (
+                <div key={card.id}
+                  className="bg-white/90 backdrop-blur-sm border border-white/50 rounded-2xl p-4 flex items-center justify-between shadow-md">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-[#EEF3F8] rounded-xl flex items-center justify-center">
+                      <CreditCardIcon className="w-6 h-6 text-[#1B3A5C]" />
+                    </div>
+                    <div>
+                      <p className="text-[#2C2C2C]">{card.brand}</p>
+                      <p className="text-xs text-[#7A7A7A]">
+                        final {card.cardNumber.slice(-4)}
+                        {card.program && ` · ${card.program}`}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Programas */}

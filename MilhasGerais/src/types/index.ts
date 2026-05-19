@@ -23,18 +23,21 @@ export interface CreditCard {
   id: number;
   cardNumber: string;
   brand: string;
+  program?: LoyaltyProgram | null;
   userId: number;
 }
 
 export interface CreateCreditCardDto {
   cardNumber: string;
   brand: string;
+  program?: LoyaltyProgram | null;
   userId: number;
 }
 
 export interface UpdateCreditCardDto {
   cardNumber?: string;
   brand?: string;
+  program?: LoyaltyProgram | null;
 }
 
 // ── Enums — espelham Models/Enums.cs ─────────────────────────────
@@ -100,6 +103,7 @@ export interface RewardTransaction {
   date: string;         // ISO string
   amount: number;       // valor em R$
   milesEarned: number;
+  program?: LoyaltyProgram | null;
 }
 
 export interface CreateUserDto {
