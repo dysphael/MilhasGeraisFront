@@ -5,6 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { useAuth } from '../hooks/useAuth';
 import { dashboardService } from '../services/dashboardService';
 import { DashboardResumo, DashboardPrograma, DashboardTransacao, DashboardAlert } from '../types';
+import { AddTransactionModal } from './AddTransactionModal';
 
 interface HomeScreenProps { onLogout: () => void; }
 
@@ -16,13 +17,16 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
   const [dashboard, setDashboard] = useState<DashboardResumo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError]         = useState<string | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
 
-  useEffect(() => {
+  const loadDashboard = () => {
     dashboardService.obterResumo()
       .then(data => { setDashboard(data); setError(null); })
       .catch(() => setError('Erro ao carregar dados do dashboard'))
       .finally(() => setIsLoading(false));
-  }, []);
+  };
+
+  useEffect(() => { loadDashboard(); }, []);
 
   if (isLoading) return (
     <div className="min-h-screen bg-[#F7F5F2] flex items-center justify-center">
@@ -116,7 +120,7 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
         {/* Atalhos rápidos */}
         <div className="grid grid-cols-4 gap-3">
           {[
-            { icon: <Plus className="w-6 h-6 text-[#1B3A5C]" />,       label: 'Adicionar', bg: 'bg-[#EEF3F8]' },
+            { icon: <Plus className="w-6 h-6 text-[#1B3A5C]" />,       label: 'Adicionar', bg: 'bg-[#EEF3F8]', onClick: () => setShowAddModal(true) },
             { icon: <ArrowRightLeft className="w-6 h-6 text-[#6B9FBF]" />, label: 'Transferir', bg: 'bg-[#EEF3F8]' },
             { icon: <History className="w-6 h-6 text-[#2C2C2C]" />,    label: 'Histórico', bg: 'bg-[#EDE9E4]' },
             { icon: <Tag className="w-6 h-6 text-[#C5A46A]" />,         label: 'Cotações',  bg: 'bg-[#FDF6EE]', onClick: () => navigate('/cotacoes') },
@@ -217,6 +221,12 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
         </div>
 
       </div>
+
+      <AddTransactionModal
+        open={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onCreated={loadDashboard}
+      />
     </div>
   );
 }
