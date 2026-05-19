@@ -77,6 +77,21 @@ export interface UserProfile {
 export interface CreateUserProfileDto extends Omit<UserProfile, 'id' | 'userId'> {}
 export interface UpdateUserProfileDto extends Partial<Omit<UserProfile, 'id' | 'userId'>> {}
 
+// ── Meta de milhas — espelha Models/MilesGoal.cs ─────────────────
+export interface MilesGoal {
+  id: number;
+  userId: number;
+  name: string;
+  targetMiles: number;
+  createdAt: string;        // ISO string
+}
+
+export interface CreateMilesGoalDto {
+  userId: number;
+  name: string;
+  targetMiles: number;
+}
+
 // ── Transação de recompensa — espelha Models/RewardTransaction.cs ─
 export interface RewardTransaction {
   id: number;

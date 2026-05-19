@@ -1,10 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Plus, ArrowRightLeft, History, TrendingUp, Target, AlertCircle, Clock, BarChart3, Tag } from 'lucide-react';
+import { Bell, Plus, ArrowRightLeft, History, TrendingUp, Target, AlertCircle, Clock, BarChart3, Tag, CreditCard as CreditCardIcon } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useAuth } from '../hooks/useAuth';
 import { dashboardService } from '../services/dashboardService';
-import { DashboardResumo, DashboardPrograma, DashboardTransacao, DashboardAlert } from '../types';
+import { creditCardService } from '../services/creditCardService';
+import { milesGoalService } from '../services/milesGoalService';
+import { DashboardResumo, DashboardPrograma, DashboardTransacao, DashboardAlert, CreditCard, MilesGoal } from '../types';
+import { AddTransactionModal } from './AddTransactionModal';
+import { AddCreditCardModal } from './AddCreditCardModal';
+import { MilesGoalsModal } from './MilesGoalsModal';
 import { PageBackground, AppHeader, LoadingPage, ErrorPage } from './Layout';
 
 interface HomeScreenProps { onLogout: () => void; }
@@ -17,18 +22,50 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
   const [dashboard, setDashboard] = useState<DashboardResumo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError]         = useState<string | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showCardModal, setShowCardModal] = useState(false);
+  const [showGoalsModal, setShowGoalsModal] = useState(false);
+  const [cards, setCards] = useState<CreditCard[]>([]);
+  const [goals, setGoals] = useState<MilesGoal[]>([]);
 
-  useEffect(() => {
+  const loadDashboard = () => {
     dashboardService.obterResumo()
       .then(data => { setDashboard(data); setError(null); })
       .catch(() => setError('Erro ao carregar dados do dashboard'))
       .finally(() => setIsLoading(false));
-  }, []);
+  };
+
+  const loadCards = () => {
+    creditCardService.listar()
+      .then(all => setCards(user ? all.filter(c => c.userId === user.id) : all))
+      .catch(() => { /* silencioso — falha não bloqueia o dashboard */ });
+  };
+
+  const loadGoals = () => {
+    if (!user) return;
+    milesGoalService.listarPorUsuario(user.id)
+      .then(setGoals)
+      .catch(() => { /* silencioso */ });
+  };
+
+  useEffect(() => { loadDashboard(); loadCards(); loadGoals(); }, [user?.id]);
 
   if (isLoading) return <LoadingPage message="Carregando dados..." />;
   if (error || !dashboard) return <ErrorPage message={error || 'Erro ao carregar dados'} />;
 
   const totalMiles = dashboard.programas.reduce((s, p) => s + p.miles, 0);
+
+  // Próxima meta = menor TargetMiles que ainda não foi atingida. Se todas batidas, pega a maior.
+  const nextGoal = (() => {
+    const pending = goals.filter(g => g.targetMiles > totalMiles).sort((a, b) => a.targetMiles - b.targetMiles)[0];
+    if (pending) return pending;
+    return goals.slice().sort((a, b) => b.targetMiles - a.targetMiles)[0] ?? null;
+  })();
+  const nextGoalAchieved = nextGoal ? totalMiles >= nextGoal.targetMiles : false;
+  const nextGoalProgress = nextGoal
+    ? Math.min(100, (totalMiles / nextGoal.targetMiles) * 100)
+    : 0;
+  const nextGoalRemaining = nextGoal ? Math.max(0, nextGoal.targetMiles - totalMiles) : 0;
 
   return (
     <PageBackground>
@@ -59,16 +96,33 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
               <TrendingUp className="w-6 h-6" />
             </button>
           </div>
-          <div className="bg-white/15 rounded-2xl p-4">
-            <div className="flex items-center gap-2 mb-1">
-              <Target className="w-4 h-4" />
-              <span className="text-sm">Próxima meta</span>
+          <button onClick={() => setShowGoalsModal(true)}
+            className="w-full text-left bg-white/15 hover:bg-white/20 rounded-2xl p-4 transition-colors">
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-2">
+                <Target className="w-4 h-4" />
+                <span className="text-sm">{nextGoal ? 'Próxima meta' : 'Crie sua primeira meta'}</span>
+              </div>
+              <span className="text-xs opacity-80 underline-offset-2 hover:underline">Gerenciar</span>
             </div>
-            <p className="text-sm opacity-90">Faltam 12.000 milhas para sua próxima viagem</p>
-            <div className="mt-2 bg-white/25 rounded-full h-1.5 overflow-hidden">
-              <div className="bg-white h-full rounded-full" style={{ width: '75%' }} />
-            </div>
-          </div>
+            {nextGoal ? (
+              <>
+                <p className="text-sm opacity-90">
+                  <span className="opacity-100">{nextGoal.name}</span>
+                  {' — '}
+                  {nextGoalAchieved
+                    ? 'meta atingida 🎉'
+                    : `faltam ${nextGoalRemaining.toLocaleString('pt-BR')} milhas`}
+                </p>
+                <div className="mt-2 bg-white/25 rounded-full h-1.5 overflow-hidden">
+                  <div className="bg-white h-full rounded-full transition-all"
+                    style={{ width: `${nextGoalProgress}%` }} />
+                </div>
+              </>
+            ) : (
+              <p className="text-sm opacity-90">Defina um destino e quantas milhas você precisa.</p>
+            )}
+          </button>
         </div>
 
         {/* Alertas */}
@@ -89,8 +143,8 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
         {/* Atalhos rápidos */}
         <div className="grid grid-cols-4 gap-3">
           {[
-            { icon: <Plus className="w-6 h-6 text-[#1B3A5C]" />,            label: 'Adicionar', bg: 'bg-[#EEF3F8]' },
-            { icon: <ArrowRightLeft className="w-6 h-6 text-[#6B9FBF]" />,  label: 'Transferir', bg: 'bg-[#EEF3F8]' },
+            { icon: <Plus className="w-6 h-6 text-[#1B3A5C]" />,            label: 'Adicionar', bg: 'bg-[#EEF3F8]', onClick: () => setShowAddModal(true) },
+            { icon: <CreditCardIcon className="w-6 h-6 text-[#1B3A5C]" />,  label: 'Cartões',   bg: 'bg-[#EEF3F8]', onClick: () => setShowCardModal(true) },
             { icon: <History className="w-6 h-6 text-[#2C2C2C]" />,         label: 'Histórico', bg: 'bg-[#EDE9E4]' },
             { icon: <Tag className="w-6 h-6 text-[#C5A46A]" />,              label: 'Cotações',  bg: 'bg-[#FDF6EE]', onClick: () => navigate('/cotacoes') },
           ].map(({ icon, label, bg, onClick }) => (
@@ -102,6 +156,44 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
               <span className="text-xs text-[#7A7A7A] text-center">{label}</span>
             </button>
           ))}
+        </div>
+
+        {/* Meus cartões */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg text-white">Meus cartões</h3>
+            <button onClick={() => setShowCardModal(true)}
+              className="text-sm text-white/90 hover:text-white flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/15 hover:bg-white/25 transition-all">
+              <Plus className="w-4 h-4" /> Adicionar
+            </button>
+          </div>
+          {cards.length === 0 ? (
+            <div className="bg-white/90 backdrop-blur-sm border border-white/50 rounded-2xl p-6 text-center">
+              <CreditCardIcon className="w-8 h-8 text-[#B0A99F] mx-auto mb-2" />
+              <p className="text-sm text-[#7A7A7A]">Você ainda não tem cartões cadastrados.</p>
+              <button onClick={() => setShowCardModal(true)}
+                className="mt-3 px-4 py-2 rounded-xl bg-[#1B3A5C] text-white text-sm hover:bg-[#2A527A] transition-colors">
+                Adicionar cartão
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {cards.map(card => (
+                <div key={card.id}
+                  className="bg-white/90 backdrop-blur-sm border border-white/50 rounded-2xl p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-[#EEF3F8] rounded-xl flex items-center justify-center">
+                      <CreditCardIcon className="w-6 h-6 text-[#1B3A5C]" />
+                    </div>
+                    <div>
+                      <p className="text-[#2C2C2C]">{card.brand}</p>
+                      <p className="text-xs text-[#7A7A7A]">final {card.cardNumber.slice(-4)}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Programas */}
@@ -191,6 +283,25 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
         </div>
 
       </div>
+
+      <AddTransactionModal
+        open={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onCreated={loadDashboard}
+      />
+
+      <AddCreditCardModal
+        open={showCardModal}
+        onClose={() => setShowCardModal(false)}
+        onCreated={loadCards}
+      />
+
+      <MilesGoalsModal
+        open={showGoalsModal}
+        onClose={() => setShowGoalsModal(false)}
+        totalMiles={totalMiles}
+        onChanged={loadGoals}
+      />
     </PageBackground>
   );
 }
