@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Plus, ArrowRightLeft, History, TrendingUp, Target, AlertCircle, Clock, BarChart3, LogOut, Tag } from 'lucide-react';
+import { Bell, Plus, ArrowRightLeft, History, TrendingUp, Target, AlertCircle, Clock, BarChart3, Tag } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useAuth } from '../hooks/useAuth';
 import { dashboardService } from '../services/dashboardService';
 import { DashboardResumo, DashboardPrograma, DashboardTransacao, DashboardAlert } from '../types';
 import { AddTransactionModal } from './AddTransactionModal';
+import { PageBackground, AppHeader, LoadingPage, ErrorPage } from './Layout';
 
 interface HomeScreenProps { onLogout: () => void; }
 
@@ -28,56 +29,29 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
 
   useEffect(() => { loadDashboard(); }, []);
 
-  if (isLoading) return (
-    <div className="min-h-screen bg-[#F7F5F2] flex items-center justify-center">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#1B3A5C] mx-auto mb-4" />
-        <p className="text-[#7A7A7A]">Carregando dados...</p>
-      </div>
-    </div>
-  );
-
-  if (error || !dashboard) return (
-    <div className="min-h-screen bg-[#F7F5F2] flex items-center justify-center p-4">
-      <div className="text-center">
-        <p className="text-red-600 mb-4">{error || 'Erro ao carregar dados'}</p>
-        <button onClick={() => window.location.reload()}
-          className="px-4 py-2 bg-[#1B3A5C] text-white rounded-xl hover:bg-[#2A527A] transition-colors">
-          Tentar novamente
-        </button>
-      </div>
-    </div>
-  );
+  if (isLoading) return <LoadingPage message="Carregando dados..." />;
+  if (error || !dashboard) return <ErrorPage message={error || 'Erro ao carregar dados'} />;
 
   const totalMiles = dashboard.programas.reduce((s, p) => s + p.miles, 0);
 
   return (
-    <div className="min-h-screen bg-[#F7F5F2]">
-
-      {/* Header */}
-      <header className="bg-white border-b border-[#E8E4DF]">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl text-[#2C2C2C]">Olá, {user?.name || 'Usuário'}</h1>
-            <p className="text-sm text-[#7A7A7A]">Bem-vindo de volta</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button className="relative p-2 hover:bg-[#F7F5F2] rounded-full transition-colors">
-              <Bell className="w-6 h-6 text-[#7A7A7A]" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-[#C5A46A] rounded-full" />
-            </button>
-            <button onClick={() => { onLogout(); navigate('/login'); }}
-              className="p-2 hover:bg-[#F7F5F2] rounded-full transition-colors" title="Sair">
-              <LogOut className="w-6 h-6 text-[#7A7A7A]" />
-            </button>
-          </div>
-        </div>
-      </header>
+    <PageBackground>
+      <AppHeader
+        title={`Olá, ${user?.name || 'Usuário'}`}
+        subtitle="Bem-vindo de volta"
+        onLogout={() => { onLogout(); navigate('/login'); }}
+        right={
+          <button className="relative p-2 rounded-full text-white/80 hover:text-white hover:bg-white/15 transition-all">
+            <Bell className="w-5 h-5" />
+            <span className="absolute top-1 right-1 w-2 h-2 bg-[#C5A46A] rounded-full" />
+          </button>
+        }
+      />
 
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-5">
 
         {/* Banner saldo total */}
-        <div className="bg-gradient-to-br from-[#1B3A5C] to-[#3A6B9A] rounded-3xl p-6 text-white shadow-lg">
+        <div className="bg-white/15 backdrop-blur-sm rounded-3xl p-6 text-white shadow-lg border border-white/20">
           <div className="flex items-center justify-between mb-4">
             <div>
               <p className="text-sm opacity-80">Saldo Total</p>
@@ -89,7 +63,6 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
               <TrendingUp className="w-6 h-6" />
             </button>
           </div>
-          {/* Meta */}
           <div className="bg-white/15 rounded-2xl p-4">
             <div className="flex items-center gap-2 mb-1">
               <Target className="w-4 h-4" />
@@ -107,8 +80,8 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
           <div key={alert.id}
             className={`flex items-start gap-3 p-4 rounded-2xl border ${
               alert.type === 'warning'
-                ? 'bg-[#FDF6EE] border-[#C5A46A]/30'
-                : 'bg-[#EEF3F8] border-[#6B9FBF]/30'
+                ? 'bg-white/90 border-[#C5A46A]/40'
+                : 'bg-white/90 border-white/50'
             }`}>
             {alert.type === 'warning'
               ? <Clock className="w-5 h-5 text-[#C5A46A] mt-0.5" />
@@ -120,13 +93,13 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
         {/* Atalhos rápidos */}
         <div className="grid grid-cols-4 gap-3">
           {[
-            { icon: <Plus className="w-6 h-6 text-[#1B3A5C]" />,       label: 'Adicionar', bg: 'bg-[#EEF3F8]', onClick: () => setShowAddModal(true) },
-            { icon: <ArrowRightLeft className="w-6 h-6 text-[#6B9FBF]" />, label: 'Transferir', bg: 'bg-[#EEF3F8]' },
-            { icon: <History className="w-6 h-6 text-[#2C2C2C]" />,    label: 'Histórico', bg: 'bg-[#EDE9E4]' },
-            { icon: <Tag className="w-6 h-6 text-[#C5A46A]" />,         label: 'Cotações',  bg: 'bg-[#FDF6EE]', onClick: () => navigate('/cotacoes') },
+            { icon: <Plus className="w-6 h-6 text-[#1B3A5C]" />,            label: 'Adicionar', bg: 'bg-[#EEF3F8]', onClick: () => setShowAddModal(true) },
+            { icon: <ArrowRightLeft className="w-6 h-6 text-[#6B9FBF]" />,  label: 'Transferir', bg: 'bg-[#EEF3F8]' },
+            { icon: <History className="w-6 h-6 text-[#2C2C2C]" />,         label: 'Histórico', bg: 'bg-[#EDE9E4]' },
+            { icon: <Tag className="w-6 h-6 text-[#C5A46A]" />,              label: 'Cotações',  bg: 'bg-[#FDF6EE]', onClick: () => navigate('/cotacoes') },
           ].map(({ icon, label, bg, onClick }) => (
             <button key={label} onClick={onClick}
-              className="bg-white border border-[#E8E4DF] p-4 rounded-2xl hover:shadow-sm transition-all flex flex-col items-center gap-2">
+              className="bg-white/90 backdrop-blur-sm border border-white/50 p-4 rounded-2xl hover:bg-white hover:shadow-lg transition-all flex flex-col items-center gap-2">
               <div className={`w-12 h-12 ${bg} rounded-full flex items-center justify-center`}>
                 {icon}
               </div>
@@ -137,10 +110,11 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
 
         {/* Programas */}
         <div>
-          <h3 className="text-lg text-[#2C2C2C] mb-3">Seus Programas</h3>
+          <h3 className="text-lg text-white mb-3">Seus Programas</h3>
           <div className="space-y-2">
             {dashboard.programas.map((program: DashboardPrograma) => (
-              <div key={program.id} className="bg-white border border-[#E8E4DF] rounded-2xl p-4 hover:shadow-sm transition-all">
+              <div key={program.id}
+                className="bg-white/90 backdrop-blur-sm border border-white/50 rounded-2xl p-4 hover:bg-white hover:shadow-md transition-all">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 bg-[#EDE9E4] rounded-xl flex items-center justify-center text-2xl">
@@ -162,7 +136,7 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
         </div>
 
         {/* Gráfico rápido */}
-        <div className="bg-white border border-[#E8E4DF] rounded-2xl p-6">
+        <div className="bg-white/90 backdrop-blur-sm border border-white/50 rounded-2xl p-6 shadow-md">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <BarChart3 className="w-5 h-5 text-[#7A7A7A]" />
@@ -190,10 +164,10 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
 
         {/* Últimas movimentações */}
         <div>
-          <h3 className="text-lg text-[#2C2C2C] mb-3">Últimas Movimentações</h3>
-          <div className="bg-white border border-[#E8E4DF] rounded-2xl divide-y divide-[#E8E4DF]">
+          <h3 className="text-lg text-white mb-3">Últimas Movimentações</h3>
+          <div className="bg-white/90 backdrop-blur-sm border border-white/50 rounded-2xl divide-y divide-[#E8E4DF] shadow-md">
             {dashboard.transacoes.map((tx: DashboardTransacao) => (
-              <div key={tx.id} className="p-4 flex items-center justify-between hover:bg-[#F7F5F2] transition-colors">
+              <div key={tx.id} className="p-4 flex items-center justify-between hover:bg-white/60 transition-colors">
                 <div className="flex items-center gap-3">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm ${
                     tx.type === 'credit'   ? 'bg-[#EEF3F8] text-[#1B3A5C]'
@@ -227,6 +201,6 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
         onClose={() => setShowAddModal(false)}
         onCreated={loadDashboard}
       />
-    </div>
+    </PageBackground>
   );
 }

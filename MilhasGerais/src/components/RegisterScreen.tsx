@@ -10,12 +10,11 @@ const passwordRules = [
   { label: 'Número',                  test: (p: string) => /\d/.test(p) },
 ];
 
-// Cores da barra de força mapeadas nos tokens do Tailwind
 const strengthColors = [
-  'bg-destructive',   // 1 — Fraca
-  'bg-accent',        // 2 — Regular
-  'bg-secondary',     // 3 — Boa
-  'bg-primary',       // 4 — Forte
+  'bg-destructive',
+  'bg-accent',
+  'bg-secondary',
+  'bg-primary',
 ];
 const strengthLabels = ['Fraca', 'Regular', 'Boa', 'Forte'];
 
@@ -57,18 +56,17 @@ export function RegisterScreen() {
 
   const passwordStrength = passwordRules.filter(r => r.test(password)).length;
 
-  // Classes reutilizáveis de input
   const inputBase = 'w-full py-3 bg-input border rounded-xl focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all text-foreground placeholder:text-muted-fg';
   const inputOk   = 'border-border';
   const inputErr  = 'border-destructive bg-destructive/5';
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-gradient-to-br from-blue-950 via-blue-700 to-cyan-500">
       <div className="w-full max-w-md">
 
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-primary rounded-3xl mb-4 shadow-lg">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-100 to-blue-900 rounded-3xl mb-4 shadow-xl hover:scale-105 transition-transform">
             <Plane className="w-10 h-10 text-primary-fg" />
           </div>
           <h1 className="text-3xl mb-1 text-foreground">Criar conta</h1>
@@ -76,7 +74,7 @@ export function RegisterScreen() {
         </div>
 
         {/* Card */}
-        <div className="bg-card rounded-3xl shadow-sm border border-border p-8">
+        <div className="bg-white rounded-3xl shadow-2xl border border-white/50 p-8 relative z-10">
 
           {submitError && (
             <div className="mb-5 p-4 bg-destructive/10 border border-destructive/30 rounded-xl flex items-start gap-3">
@@ -193,7 +191,7 @@ export function RegisterScreen() {
             </div>
 
             <button type="submit" disabled={isLoading}
-              className="w-full mt-2 bg-primary hover:bg-primary-hover text-primary-fg py-3 rounded-xl hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+              className="w-full mt-2 bg-blue-600 text-white py-3 rounded-xl hover:bg-blue-700 hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
               {isLoading ? <><Loader className="w-5 h-5 animate-spin" />Criando conta...</> : 'Criar conta'}
             </button>
           </form>

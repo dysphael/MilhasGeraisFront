@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, RefreshCw, TrendingDown, Tag, ExternalLink, LogOut, Clock, Zap } from 'lucide-react';
+import { RefreshCw, TrendingDown, Tag, ExternalLink, Clock, Zap } from 'lucide-react';
 import { milesQuotesService } from '../services/milesQuotesService';
 import { MilesQuote } from '../types';
+import { PageBackground, AppHeader, LoadingPage } from './Layout';
 
 interface MilesQuotesScreenProps { onLogout: () => void; }
 
@@ -25,11 +26,11 @@ const fmtDate = (iso: string) =>
 
 export function MilesQuotesScreen({ onLogout }: MilesQuotesScreenProps) {
   const navigate = useNavigate();
-  const [quotes, setQuotes]                     = useState<MilesQuote[]>([]);
-  const [isLoading, setIsLoading]               = useState(true);
-  const [isRefreshing, setIsRefreshing]         = useState(false);
+  const [quotes, setQuotes]                       = useState<MilesQuote[]>([]);
+  const [isLoading, setIsLoading]                 = useState(true);
+  const [isRefreshing, setIsRefreshing]           = useState(false);
   const [refreshingProgram, setRefreshingProgram] = useState<string | null>(null);
-  const [error, setError]                       = useState<string | null>(null);
+  const [error, setError]                         = useState<string | null>(null);
 
   const fetchQuotes = useCallback(async () => {
     try {
@@ -61,53 +62,33 @@ export function MilesQuotesScreen({ onLogout }: MilesQuotesScreenProps) {
 
   const bestQuote = quotes.length > 0 ? quotes.reduce((a, b) => a.pricePerMile < b.pricePerMile ? a : b) : null;
 
-  if (isLoading) return (
-    <div className="min-h-screen bg-[#F7F5F2] flex items-center justify-center">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#1B3A5C] mx-auto mb-4" />
-        <p className="text-[#7A7A7A]">Buscando cotações...</p>
-      </div>
-    </div>
-  );
+  if (isLoading) return <LoadingPage message="Buscando cotações..." />;
 
   return (
-    <div className="min-h-screen bg-[#F7F5F2]">
-
-      {/* Header */}
-      <header className="bg-white border-b border-[#E8E4DF]">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button onClick={() => navigate('/home')} className="p-2 hover:bg-[#F7F5F2] rounded-full transition-colors">
-              <ArrowLeft className="w-6 h-6 text-[#7A7A7A]" />
-            </button>
-            <div>
-              <h1 className="text-2xl text-[#2C2C2C]">Cotação de Milhas</h1>
-              <p className="text-sm text-[#7A7A7A]">Preços ao vivo dos programas</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button onClick={handleRefreshAll} disabled={isRefreshing}
-              className="flex items-center gap-2 px-4 py-2 bg-[#1B3A5C] text-white rounded-xl hover:bg-[#2A527A] transition-colors disabled:opacity-50 text-sm">
-              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-              {isRefreshing ? 'Atualizando...' : 'Atualizar tudo'}
-            </button>
-            <button onClick={() => { onLogout(); navigate('/login'); }}
-              className="p-2 hover:bg-[#F7F5F2] rounded-full transition-colors">
-              <LogOut className="w-6 h-6 text-[#7A7A7A]" />
-            </button>
-          </div>
-        </div>
-      </header>
+    <PageBackground>
+      <AppHeader
+        title="Cotação de Milhas"
+        subtitle="Preços ao vivo dos programas"
+        onBack={() => navigate('/home')}
+        onLogout={() => { onLogout(); navigate('/login'); }}
+        right={
+          <button onClick={handleRefreshAll} disabled={isRefreshing}
+            className="flex items-center gap-2 px-4 py-2 bg-white/20 backdrop-blur-sm text-white border border-white/30 rounded-xl hover:bg-white/30 transition-colors disabled:opacity-50 text-sm">
+            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            {isRefreshing ? 'Atualizando...' : 'Atualizar tudo'}
+          </button>
+        }
+      />
 
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-5">
 
         {error && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">{error}</div>
+          <div className="p-4 bg-white/90 backdrop-blur-sm border border-red-200 rounded-xl text-red-700 text-sm shadow-md">{error}</div>
         )}
 
         {/* Banner melhor cotação */}
         {bestQuote && (
-          <div className="bg-gradient-to-br from-[#1B3A5C] to-[#3A6B9A] rounded-3xl p-6 text-white shadow-lg">
+          <div className="bg-white/15 backdrop-blur-sm rounded-3xl p-6 text-white shadow-lg border border-white/20">
             <div className="flex items-center gap-2 mb-1 opacity-80">
               <Zap className="w-4 h-4" />
               <span className="text-sm">Melhor cotação agora</span>
@@ -131,14 +112,14 @@ export function MilesQuotesScreen({ onLogout }: MilesQuotesScreenProps) {
         {/* Cards de cotação */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {quotes.map(quote => {
-            const style    = PROGRAM_STYLE[quote.program] ?? { bg: 'bg-[#EDE9E4]', text: 'text-[#2C2C2C]', border: 'border-[#E8E4DF]' };
-            const isBest   = bestQuote?.program === quote.program;
+            const style      = PROGRAM_STYLE[quote.program] ?? { bg: 'bg-[#EDE9E4]', text: 'text-[#2C2C2C]', border: 'border-[#E8E4DF]' };
+            const isBest     = bestQuote?.program === quote.program;
             const isUpdating = refreshingProgram === quote.program;
 
             return (
               <div key={quote.program}
-                className={`bg-white rounded-2xl p-5 border-2 transition-all ${
-                  isBest ? 'border-[#C5A46A]' : 'border-[#E8E4DF]'
+                className={`bg-white/90 backdrop-blur-sm rounded-2xl p-5 border-2 shadow-md transition-all ${
+                  isBest ? 'border-[#C5A46A]' : 'border-white/50'
                 }`}>
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
@@ -198,15 +179,15 @@ export function MilesQuotesScreen({ onLogout }: MilesQuotesScreenProps) {
         </div>
 
         {quotes.length === 0 && !error && (
-          <div className="text-center py-16 text-[#7A7A7A]">
+          <div className="text-center py-16 text-white/80">
             <p className="mb-4">Nenhuma cotação disponível ainda.</p>
             <button onClick={handleRefreshAll}
-              className="px-4 py-2 bg-[#1B3A5C] text-white rounded-xl hover:bg-[#2A527A] transition-colors">
+              className="px-4 py-2 bg-white/20 backdrop-blur-sm text-white border border-white/30 rounded-xl hover:bg-white/30 transition-colors">
               Buscar cotações agora
             </button>
           </div>
         )}
       </div>
-    </div>
+    </PageBackground>
   );
 }
