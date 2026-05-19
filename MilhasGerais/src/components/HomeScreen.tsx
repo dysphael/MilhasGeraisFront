@@ -5,9 +5,11 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { useAuth } from '../hooks/useAuth';
 import { dashboardService } from '../services/dashboardService';
 import { creditCardService } from '../services/creditCardService';
-import { DashboardResumo, DashboardPrograma, DashboardTransacao, DashboardAlert, CreditCard } from '../types';
+import { milesGoalService } from '../services/milesGoalService';
+import { DashboardResumo, DashboardPrograma, DashboardTransacao, DashboardAlert, CreditCard, MilesGoal } from '../types';
 import { AddTransactionModal } from './AddTransactionModal';
 import { AddCreditCardModal } from './AddCreditCardModal';
+import { MilesGoalsModal } from './MilesGoalsModal';
 import { PageBackground, AppHeader, LoadingPage, ErrorPage } from './Layout';
 
 interface HomeScreenProps { onLogout: () => void; }
@@ -22,7 +24,9 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
   const [error, setError]         = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showCardModal, setShowCardModal] = useState(false);
+  const [showGoalsModal, setShowGoalsModal] = useState(false);
   const [cards, setCards] = useState<CreditCard[]>([]);
+  const [goals, setGoals] = useState<MilesGoal[]>([]);
 
   const loadDashboard = () => {
     dashboardService.obterResumo()
@@ -37,12 +41,31 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
       .catch(() => { /* silencioso — falha não bloqueia o dashboard */ });
   };
 
-  useEffect(() => { loadDashboard(); loadCards(); }, [user?.id]);
+  const loadGoals = () => {
+    if (!user) return;
+    milesGoalService.listarPorUsuario(user.id)
+      .then(setGoals)
+      .catch(() => { /* silencioso */ });
+  };
+
+  useEffect(() => { loadDashboard(); loadCards(); loadGoals(); }, [user?.id]);
 
   if (isLoading) return <LoadingPage message="Carregando dados..." />;
   if (error || !dashboard) return <ErrorPage message={error || 'Erro ao carregar dados'} />;
 
   const totalMiles = dashboard.programas.reduce((s, p) => s + p.miles, 0);
+
+  // Próxima meta = menor TargetMiles que ainda não foi atingida. Se todas batidas, pega a maior.
+  const nextGoal = (() => {
+    const pending = goals.filter(g => g.targetMiles > totalMiles).sort((a, b) => a.targetMiles - b.targetMiles)[0];
+    if (pending) return pending;
+    return goals.slice().sort((a, b) => b.targetMiles - a.targetMiles)[0] ?? null;
+  })();
+  const nextGoalAchieved = nextGoal ? totalMiles >= nextGoal.targetMiles : false;
+  const nextGoalProgress = nextGoal
+    ? Math.min(100, (totalMiles / nextGoal.targetMiles) * 100)
+    : 0;
+  const nextGoalRemaining = nextGoal ? Math.max(0, nextGoal.targetMiles - totalMiles) : 0;
 
   return (
     <PageBackground>
@@ -73,16 +96,33 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
               <TrendingUp className="w-6 h-6" />
             </button>
           </div>
-          <div className="bg-white/15 rounded-2xl p-4">
-            <div className="flex items-center gap-2 mb-1">
-              <Target className="w-4 h-4" />
-              <span className="text-sm">Próxima meta</span>
+          <button onClick={() => setShowGoalsModal(true)}
+            className="w-full text-left bg-white/15 hover:bg-white/20 rounded-2xl p-4 transition-colors">
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-2">
+                <Target className="w-4 h-4" />
+                <span className="text-sm">{nextGoal ? 'Próxima meta' : 'Crie sua primeira meta'}</span>
+              </div>
+              <span className="text-xs opacity-80 underline-offset-2 hover:underline">Gerenciar</span>
             </div>
-            <p className="text-sm opacity-90">Faltam 12.000 milhas para sua próxima viagem</p>
-            <div className="mt-2 bg-white/25 rounded-full h-1.5 overflow-hidden">
-              <div className="bg-white h-full rounded-full" style={{ width: '75%' }} />
-            </div>
-          </div>
+            {nextGoal ? (
+              <>
+                <p className="text-sm opacity-90">
+                  <span className="opacity-100">{nextGoal.name}</span>
+                  {' — '}
+                  {nextGoalAchieved
+                    ? 'meta atingida 🎉'
+                    : `faltam ${nextGoalRemaining.toLocaleString('pt-BR')} milhas`}
+                </p>
+                <div className="mt-2 bg-white/25 rounded-full h-1.5 overflow-hidden">
+                  <div className="bg-white h-full rounded-full transition-all"
+                    style={{ width: `${nextGoalProgress}%` }} />
+                </div>
+              </>
+            ) : (
+              <p className="text-sm opacity-90">Defina um destino e quantas milhas você precisa.</p>
+            )}
+          </button>
         </div>
 
         {/* Alertas */}
@@ -254,6 +294,13 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
         open={showCardModal}
         onClose={() => setShowCardModal(false)}
         onCreated={loadCards}
+      />
+
+      <MilesGoalsModal
+        open={showGoalsModal}
+        onClose={() => setShowGoalsModal(false)}
+        totalMiles={totalMiles}
+        onChanged={loadGoals}
       />
     </PageBackground>
   );
