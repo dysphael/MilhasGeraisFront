@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, PieChart as PieChartIcon, BarChart3, TrendingUp, AlertTriangle, LogOut } from 'lucide-react';
+import { PieChart as PieChartIcon, BarChart3, TrendingUp, AlertTriangle } from 'lucide-react';
 import {
   BarChart, Bar, PieChart, Pie, LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -8,6 +8,7 @@ import {
 } from 'recharts';
 import { dashboardService } from '../services/dashboardService';
 import { AnalyticsData } from '../types';
+import { PageBackground, AppHeader, LoadingPage, ErrorPage } from './Layout';
 
 interface GraphsScreenProps { onLogout: () => void; }
 
@@ -26,26 +27,8 @@ export function GraphsScreen({ onLogout }: GraphsScreenProps) {
       .finally(() => setIsLoading(false));
   }, []);
 
-  if (isLoading) return (
-    <div className="min-h-screen bg-[#F7F5F2] flex items-center justify-center">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#1B3A5C] mx-auto mb-4" />
-        <p className="text-[#7A7A7A]">Carregando gráficos...</p>
-      </div>
-    </div>
-  );
-
-  if (error || !analytics) return (
-    <div className="min-h-screen bg-[#F7F5F2] flex items-center justify-center p-4">
-      <div className="text-center">
-        <p className="text-red-600 mb-4">{error || 'Erro ao carregar dados'}</p>
-        <button onClick={() => window.location.reload()}
-          className="px-4 py-2 bg-[#1B3A5C] text-white rounded-xl hover:bg-[#2A527A] transition-colors">
-          Tentar novamente
-        </button>
-      </div>
-    </div>
-  );
+  if (isLoading) return <LoadingPage message="Carregando gráficos..." />;
+  if (error || !analytics) return <ErrorPage message={error || 'Erro ao carregar dados'} />;
 
   const totalMiles = analytics.programas.reduce((s, p) => s + p.miles, 0);
 
@@ -57,37 +40,24 @@ export function GraphsScreen({ onLogout }: GraphsScreenProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F5F2]">
-
-      {/* Header */}
-      <header className="bg-white border-b border-[#E8E4DF]">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button onClick={() => navigate('/home')} className="p-2 hover:bg-[#F7F5F2] rounded-full transition-colors">
-              <ArrowLeft className="w-6 h-6 text-[#7A7A7A]" />
-            </button>
-            <div>
-              <h1 className="text-2xl text-[#2C2C2C]">Análise de Milhas</h1>
-              <p className="text-sm text-[#7A7A7A]">Visualize seus dados</p>
-            </div>
-          </div>
-          <button onClick={() => { onLogout(); navigate('/login'); }}
-            className="p-2 hover:bg-[#F7F5F2] rounded-full transition-colors">
-            <LogOut className="w-6 h-6 text-[#7A7A7A]" />
-          </button>
-        </div>
-      </header>
+    <PageBackground>
+      <AppHeader
+        title="Análise de Milhas"
+        subtitle="Visualize seus dados"
+        onBack={() => navigate('/home')}
+        onLogout={() => { onLogout(); navigate('/login'); }}
+      />
 
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-5">
 
         {/* Cards resumo */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
-            { icon: <BarChart3 className="w-5 h-5 text-[#1B3A5C]" />, bg: 'bg-[#EEF3F8]', label: 'Total Acumulado', value: totalMiles.toLocaleString('pt-BR'), sub: `em ${analytics.programas.length} programas` },
-            { icon: <TrendingUp className="w-5 h-5 text-[#6B9FBF]" />, bg: 'bg-[#EEF3F8]',  label: 'Crescimento',    value: analytics.crescimento, sub: 'nos últimos 30 dias', valueColor: 'text-[#1B3A5C]' },
+            { icon: <BarChart3 className="w-5 h-5 text-[#1B3A5C]" />,    bg: 'bg-[#EEF3F8]', label: 'Total Acumulado', value: totalMiles.toLocaleString('pt-BR'), sub: `em ${analytics.programas.length} programas` },
+            { icon: <TrendingUp className="w-5 h-5 text-[#6B9FBF]" />,   bg: 'bg-[#EEF3F8]', label: 'Crescimento',    value: analytics.crescimento, sub: 'nos últimos 30 dias', valueColor: 'text-[#1B3A5C]' },
             { icon: <AlertTriangle className="w-5 h-5 text-[#C5A46A]" />, bg: 'bg-[#FDF6EE]', label: 'A Vencer',      value: analytics.aVencer,     sub: 'nos próximos 15 dias', valueColor: 'text-[#C5A46A]' },
           ].map(({ icon, bg, label, value, sub, valueColor }) => (
-            <div key={label} className="bg-white border border-[#E8E4DF] rounded-2xl p-6">
+            <div key={label} className="bg-white/90 backdrop-blur-sm border border-white/50 rounded-2xl p-6 shadow-md">
               <div className="flex items-center gap-3 mb-2">
                 <div className={`w-10 h-10 ${bg} rounded-full flex items-center justify-center`}>{icon}</div>
                 <p className="text-sm text-[#7A7A7A]">{label}</p>
@@ -99,7 +69,7 @@ export function GraphsScreen({ onLogout }: GraphsScreenProps) {
         </div>
 
         {/* Barras por programa */}
-        <div className="bg-white border border-[#E8E4DF] rounded-2xl p-6">
+        <div className="bg-white/90 backdrop-blur-sm border border-white/50 rounded-2xl p-6 shadow-md">
           <div className="flex items-center gap-2 mb-4">
             <BarChart3 className="w-5 h-5 text-[#7A7A7A]" />
             <h2 className="text-lg text-[#2C2C2C]">Comparação por Programa</h2>
@@ -121,7 +91,7 @@ export function GraphsScreen({ onLogout }: GraphsScreenProps) {
 
         {/* Pizza + detalhes */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <div className="bg-white border border-[#E8E4DF] rounded-2xl p-6">
+          <div className="bg-white/90 backdrop-blur-sm border border-white/50 rounded-2xl p-6 shadow-md">
             <div className="flex items-center gap-2 mb-4">
               <PieChartIcon className="w-5 h-5 text-[#7A7A7A]" />
               <h2 className="text-lg text-[#2C2C2C]">Distribuição</h2>
@@ -141,7 +111,7 @@ export function GraphsScreen({ onLogout }: GraphsScreenProps) {
             </ResponsiveContainer>
           </div>
 
-          <div className="bg-white border border-[#E8E4DF] rounded-2xl p-6">
+          <div className="bg-white/90 backdrop-blur-sm border border-white/50 rounded-2xl p-6 shadow-md">
             <h3 className="text-lg text-[#2C2C2C] mb-4">Detalhes</h3>
             <div className="space-y-3">
               {analytics.distribuicao.map((item, i) => {
@@ -164,7 +134,7 @@ export function GraphsScreen({ onLogout }: GraphsScreenProps) {
         </div>
 
         {/* Evolução */}
-        <div className="bg-white border border-[#E8E4DF] rounded-2xl p-6">
+        <div className="bg-white/90 backdrop-blur-sm border border-white/50 rounded-2xl p-6 shadow-md">
           <div className="flex items-center gap-2 mb-4">
             <TrendingUp className="w-5 h-5 text-[#7A7A7A]" />
             <h2 className="text-lg text-[#2C2C2C]">Evolução dos Últimos Meses</h2>
@@ -183,7 +153,7 @@ export function GraphsScreen({ onLogout }: GraphsScreenProps) {
         </div>
 
         {/* Vencimento */}
-        <div className="bg-white border border-[#E8E4DF] rounded-2xl p-6">
+        <div className="bg-white/90 backdrop-blur-sm border border-white/50 rounded-2xl p-6 shadow-md">
           <div className="flex items-center gap-2 mb-4">
             <AlertTriangle className="w-5 h-5 text-[#C5A46A]" />
             <h2 className="text-lg text-[#2C2C2C]">Previsão de Vencimento</h2>
@@ -203,6 +173,6 @@ export function GraphsScreen({ onLogout }: GraphsScreenProps) {
         </div>
 
       </div>
-    </div>
+    </PageBackground>
   );
 }
