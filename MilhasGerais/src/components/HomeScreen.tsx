@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Plus, ArrowRightLeft, History, TrendingUp, Target, AlertCircle, Clock, Tag, CreditCard as CreditCardIcon } from 'lucide-react';
+import { Bell, Plus, ArrowRightLeft, History, TrendingUp, Target, AlertCircle, Clock, Tag, CreditCard as CreditCardIcon, UserCog } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { dashboardService } from '../services/dashboardService';
 import { creditCardService } from '../services/creditCardService';
@@ -11,6 +11,7 @@ import { AdicionarMilhasModal } from './modals/AdicionarMilhasModal';
 import { TransferirMilhasModal } from './modals/TransferirMilhasModal';
 import { AddCreditCardModal } from './AddCreditCardModal';
 import { MilesGoalsModal } from './MilesGoalsModal';
+import { UserProfileModal } from './UserProfileModal';
 
 interface HomeScreenProps { onLogout: () => void; }
 
@@ -25,6 +26,7 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
   const [modalAberto, setModalAberto] = useState<ModalAberto>(null);
   const [showCardModal, setShowCardModal] = useState(false);
   const [showGoalsModal, setShowGoalsModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const [cards, setCards] = useState<CreditCard[]>([]);
   const [goals, setGoals] = useState<MilesGoal[]>([]);
 
@@ -95,11 +97,24 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
         totalMiles={totalMiles}
         onChanged={carregarMetas}
       />
+      <UserProfileModal
+        open={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+      />
 
       <AppHeader
         title={`Olá, ${user?.name || 'Usuário'}`}
         subtitle="Bem-vindo de volta"
         onLogout={() => { onLogout(); navigate('/login'); }}
+        nameAction={
+          <button onClick={() => setShowProfileModal(true)}
+            className="ml-1 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/15 hover:bg-white/25 transition-all text-white text-xs"
+            title="Editar perfil de viagem e investimento"
+            aria-label="Editar perfil de viagem e investimento">
+            <UserCog className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Perfil</span>
+          </button>
+        }
         right={
           <button className="p-2 rounded-full text-white/80 hover:text-white hover:bg-white/15 transition-all">
             <Bell className="w-5 h-5" />
