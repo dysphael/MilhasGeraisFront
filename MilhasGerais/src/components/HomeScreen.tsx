@@ -250,24 +250,54 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
               </button>
             </div>
           ) : (
-            <div className="space-y-2">
-              {cards.map(card => (
-                <div key={card.id}
-                  className="bg-white/90 backdrop-blur-sm border border-white/50 rounded-2xl p-4 flex items-center justify-between shadow-md">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-[#EEF3F8] rounded-xl flex items-center justify-center">
-                      <CreditCardIcon className="w-6 h-6 text-[#1B3A5C]" />
+            <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory">
+              {cards.map((card, i) => {
+                const gradients = [
+                  'from-[#1B3A5C] to-[#2A6096]',
+                  'from-[#2C2C2C] to-[#555555]',
+                  'from-[#748944] to-[#A0B85A]',
+                  'from-[#6B3FA0] to-[#9B6FD0]',
+                  'from-[#C5A46A] to-[#E8C98A]',
+                ];
+                const gradient = gradients[i % gradients.length];
+                const lastFour = card.cardNumber.replace(/\s/g, '').slice(-4);
+
+                return (
+                  <button
+                    key={card.id}
+                    onClick={() => navigate(`/cartoes/${card.id}`)}
+                    className={`snap-start shrink-0 w-72 bg-gradient-to-br ${gradient} rounded-2xl p-5 shadow-xl text-white relative overflow-hidden hover:scale-[1.02] transition-transform`}
+                  >
+                    {/* Círculos decorativos */}
+                    <div className="absolute -top-6 -right-6 w-32 h-32 rounded-full bg-white/10" />
+                    <div className="absolute -bottom-8 -right-2 w-40 h-40 rounded-full bg-white/5" />
+
+                    {/* Chip */}
+                    <div className="w-10 h-7 bg-white/30 rounded-md mb-6 relative z-10 flex items-center justify-center">
+                      <div className="w-6 h-4 border border-white/50 rounded-sm grid grid-cols-2 gap-px p-0.5">
+                        <div className="bg-white/40 rounded-sm" />
+                        <div className="bg-white/40 rounded-sm" />
+                        <div className="bg-white/40 rounded-sm" />
+                        <div className="bg-white/40 rounded-sm" />
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-[#2C2C2C]">{card.brand}</p>
-                      <p className="text-xs text-[#7A7A7A]">
-                        final {card.cardNumber.slice(-4)}
-                        {card.program && ` · ${card.program}`}
-                      </p>
+
+                    {/* Número */}
+                    <p className="text-lg tracking-widest font-mono relative z-10 mb-4">
+                      •••• •••• •••• {lastFour}
+                    </p>
+
+                    {/* Rodapé */}
+                    <div className="flex items-center justify-between relative z-10">
+                      <div>
+                        <p className="text-xs text-white/60 uppercase tracking-wider">Titular</p>
+                        <p className="text-sm truncate max-w-[140px]">{user?.name || 'Usuário'}</p>
+                      </div>
+                      <p className="text-lg font-semibold tracking-wider">{card.brand}</p>
                     </div>
-                  </div>
-                </div>
-              ))}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
