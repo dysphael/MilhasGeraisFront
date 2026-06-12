@@ -78,6 +78,7 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
           onSuccess={carregarDashboard}
           userId={user?.id ?? 1}
           programas={dashboard.programas}
+          cards={cards}
         />
       )}
       {modalAberto === 'transferir' && (
@@ -211,6 +212,12 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
               label: 'Cotações',
               bg: 'bg-[#FDF6EE]',
               onClick: () => navigate('/cotacoes'),
+            },
+            {
+              icon: <CreditCardIcon className="w-6 h-6 text-[#1B3A5C]" />,
+              label: 'Cartões',
+              bg: 'bg-[#EEF3F8]',
+              onClick: () => navigate('/cartoes'),
             },
           ].map(({ icon, label, bg, onClick }) => (
             <button key={label} onClick={onClick}

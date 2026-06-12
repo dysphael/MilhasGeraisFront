@@ -8,6 +8,12 @@ export const creditCardService = {
     return response.data;
   },
 
+  // GET /api/creditcards/user/{userId}
+  listarPorUsuario: async (userId: number): Promise<CreditCard[]> => {
+    const response = await api.get<CreditCard[]>(`/creditcards/user/${userId}`);
+    return response.data;
+  },
+
   // GET /api/creditcards/{id}
   obterPorId: async (id: number): Promise<CreditCard> => {
     const response = await api.get<CreditCard>(`/creditcards/${id}`);
