@@ -26,6 +26,12 @@ export const rewardTransactionService = {
     return response.data;
   },
 
+  // GET /api/creditcards/{cardId}/transactions
+  listarPorCartao: async (cardId: number): Promise<RewardTransaction[]> => {
+    const response = await api.get<RewardTransaction[]>(`/creditcards/${cardId}/transactions`);
+    return response.data;
+  },
+
   // DELETE /api/rewardtransactions/{id}
   deletar: async (id: number): Promise<void> => {
     await api.delete(`/rewardtransactions/${id}`);

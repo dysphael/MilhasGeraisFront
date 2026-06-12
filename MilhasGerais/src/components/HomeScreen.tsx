@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Plus, ArrowRightLeft, History, TrendingUp, AlertCircle, Clock, Tag } from 'lucide-react';
+import { Bell, Plus, ArrowRightLeft, History, TrendingUp, AlertCircle, Clock, Tag, CreditCard as CreditCardIcon } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { dashboardService } from '../services/dashboardService';
 import { DashboardResumo, DashboardPrograma, DashboardTransacao, DashboardAlert } from '../types';
@@ -123,6 +123,12 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
               label: 'Cotações',
               bg: 'bg-[#FDF6EE]',
               onClick: () => navigate('/cotacoes'),
+            },
+            {
+              icon: <CreditCardIcon className="w-6 h-6 text-[#1B3A5C]" />,
+              label: 'Cartões',
+              bg: 'bg-[#EEF3F8]',
+              onClick: () => navigate('/cartoes'),
             },
           ].map(({ icon, label, bg, onClick }) => (
             <button key={label} onClick={onClick}

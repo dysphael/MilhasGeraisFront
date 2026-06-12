@@ -6,6 +6,8 @@ import { HomeScreen } from './components/HomeScreen';
 import { GraphsScreen } from './components/GraphsScreen';
 import { MilesQuotesScreen } from './components/MilesQuotesScreen';
 import { HistoricoScreen } from './components/HistoricoScreen';
+import { CreditCardList } from './components/CreditCardList';
+import { CreditCardDetail } from './components/CreditCardDetail';
 
 export default function App() {
   const { isAuthenticated, isLoading, logout } = useAuth();
@@ -31,7 +33,9 @@ export default function App() {
       <Route path="/home"     element={isAuthenticated ? <HomeScreen onLogout={logout} />        : <Navigate to="/login" />} />
       <Route path="/graphs"   element={isAuthenticated ? <GraphsScreen onLogout={logout} />      : <Navigate to="/login" />} />
       <Route path="/cotacoes"  element={isAuthenticated ? <MilesQuotesScreen onLogout={logout} /> : <Navigate to="/login" />} />
-      <Route path="/historico" element={isAuthenticated ? <HistoricoScreen onLogout={logout} />   : <Navigate to="/login" />} />
+      <Route path="/historico"  element={isAuthenticated ? <HistoricoScreen  onLogout={logout} />   : <Navigate to="/login" />} />
+      <Route path="/cartoes"    element={isAuthenticated ? <CreditCardList   onLogout={logout} />   : <Navigate to="/login" />} />
+      <Route path="/cartoes/:id" element={isAuthenticated ? <CreditCardDetail onLogout={logout} />  : <Navigate to="/login" />} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to={isAuthenticated ? '/home' : '/login'} />} />
