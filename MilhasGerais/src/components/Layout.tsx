@@ -25,9 +25,11 @@ interface AppHeaderProps {
   onBack?: () => void;
   onLogout?: () => void;
   right?: ReactNode;
+  /** Ação inline ao lado do nome (botão pequeno, ícone, etc.). */
+  nameAction?: ReactNode;
 }
 
-export function AppHeader({ title, subtitle, onBack, onLogout, right }: AppHeaderProps) {
+export function AppHeader({ title, subtitle, onBack, onLogout, right, nameAction }: AppHeaderProps) {
   return (
     <header className="sticky top-0 z-20 backdrop-blur-md bg-white/10 border-b border-white/20">
       <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
@@ -47,6 +49,7 @@ export function AppHeader({ title, subtitle, onBack, onLogout, right }: AppHeade
             <p className="text-white leading-tight">{title}</p>
             {subtitle && <p className="text-white/60 text-xs">{subtitle}</p>}
           </div>
+          {nameAction}
         </div>
 
         <div className="flex items-center gap-2">

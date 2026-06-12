@@ -2,9 +2,19 @@ import { useEffect, useState } from 'react';
 import { X, CreditCard as CreditCardIcon, Calendar, DollarSign, Plane, Loader, XCircle, Plus } from 'lucide-react';
 import { creditCardService } from '../services/creditCardService';
 import { rewardTransactionService } from '../services/rewardTransactionService';
-import { CreditCard } from '../types';
+import { CreditCard, LoyaltyProgram } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import { AddCreditCardModal } from './AddCreditCardModal';
+
+const PROGRAMS: { value: LoyaltyProgram; label: string }[] = [
+  { value: 'Smiles',    label: 'Smiles (Gol)'      },
+  { value: 'Latam',     label: 'Latam Pass'         },
+  { value: 'Azul',      label: 'TudoAzul'           },
+  { value: 'Multiplus', label: 'Multiplus'          },
+  { value: 'Livelo',    label: 'Livelo'             },
+  { value: 'Esfera',    label: 'Esfera (Santander)' },
+  { value: 'Other',     label: 'Outro'              },
+];
 
 interface AddTransactionModalProps {
   open: boolean;
@@ -22,6 +32,8 @@ export function AddTransactionModal({ open, onClose, onCreated }: AddTransaction
   const [date, setDate]                 = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [amount, setAmount]             = useState<string>('');
   const [milesEarned, setMilesEarned]   = useState<string>('');
+  const [program, setProgram]           = useState<LoyaltyProgram | ''>('');
+  const [programTouched, setProgramTouched] = useState(false);
 
   const [fieldErrors, setFieldErrors]   = useState<Record<string, string>>({});
   const [submitError, setSubmitError]   = useState<string | null>(null);
@@ -50,9 +62,19 @@ export function AddTransactionModal({ open, onClose, onCreated }: AddTransaction
     setMilesEarned('');
     setDate(new Date().toISOString().slice(0, 10));
     setCreditCardId('');
+    setProgram('');
+    setProgramTouched(false);
 
     reloadCards();
   }, [open, user]);
+
+  // Auto-preenche o programa a partir do cartão selecionado, enquanto o usuário
+  // não tiver editado o campo manualmente.
+  useEffect(() => {
+    if (programTouched || !creditCardId) return;
+    const card = cards.find(c => c.id === Number(creditCardId));
+    if (card?.program) setProgram(card.program);
+  }, [creditCardId, cards, programTouched]);
 
   if (!open) return null;
 
@@ -82,6 +104,7 @@ export function AddTransactionModal({ open, onClose, onCreated }: AddTransaction
         date: new Date(date).toISOString(),
         amount: Number(amount.replace(',', '.')),
         milesEarned: Number(milesEarned),
+        program: program || null,
       });
       onCreated?.();
       onClose();
@@ -183,6 +206,24 @@ export function AddTransactionModal({ open, onClose, onCreated }: AddTransaction
                 className={`${inputBase} pl-12 pr-4 ${fieldErrors.milesEarned ? inputErr : inputOk}`} />
             </div>
             {fieldErrors.milesEarned && <p className="mt-1 text-xs text-red-500">{fieldErrors.milesEarned}</p>}
+          </div>
+
+          {/* Programa de milhas */}
+          <div>
+            <label htmlFor="program" className="block text-sm text-[#2C2C2C] mb-1.5">
+              Programa de milhas <span className="text-[#B0A99F] text-xs">(opcional)</span>
+            </label>
+            <div className="relative">
+              <Plane className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#7A7A7A]" />
+              <select id="program" value={program}
+                onChange={e => { setProgram(e.target.value as LoyaltyProgram | ''); setProgramTouched(true); }}
+                disabled={isSubmitting}
+                className={`${inputBase} pl-12 pr-4 appearance-none ${inputOk}`}>
+                <option value="">Selecione o programa</option>
+                {PROGRAMS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+              </select>
+            </div>
+            <p className="mt-1 text-xs text-[#7A7A7A]">Para qual programa as milhas vão.</p>
           </div>
 
           <div className="flex gap-3 pt-2">
