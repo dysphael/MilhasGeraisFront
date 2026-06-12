@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CreditCard as CreditCardIcon, Plus, Trash2, ChevronRight } from 'lucide-react';
 import { useCreditCards } from '../hooks/useCreditCards';
+import { useAuth } from '../hooks/useAuth';
 import { PageBackground, AppHeader, LoadingPage, ErrorPage } from './Layout';
 import { AddCreditCardModal } from './AddCreditCardModal';
 
@@ -9,7 +10,8 @@ interface CreditCardListProps { onLogout: () => void; }
 
 export function CreditCardList({ onLogout }: CreditCardListProps) {
   const navigate = useNavigate();
-  const { cards, isLoading, error, carregar, remover } = useCreditCards();
+  const { user } = useAuth();
+  const { cards, isLoading, error, carregar, remover } = useCreditCards(user?.id);
   const [confirmId, setConfirmId]     = useState<number | null>(null);
   const [deletingId, setDeletingId]   = useState<number | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);

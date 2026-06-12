@@ -7,6 +7,7 @@ import { DashboardResumo, DashboardPrograma, DashboardTransacao, DashboardAlert 
 import { PageBackground, AppHeader, LoadingPage, ErrorPage } from './Layout';
 import { AdicionarMilhasModal } from './modals/AdicionarMilhasModal';
 import { TransferirMilhasModal } from './modals/TransferirMilhasModal';
+import { useCreditCards } from '../hooks/useCreditCards';
 
 interface HomeScreenProps { onLogout: () => void; }
 
@@ -19,6 +20,7 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError]         = useState<string | null>(null);
   const [modalAberto, setModalAberto] = useState<ModalAberto>(null);
+  const { cards } = useCreditCards(user?.id);
 
   const carregarDashboard = () => {
     setIsLoading(true);
@@ -44,6 +46,7 @@ export function HomeScreen({ onLogout }: HomeScreenProps) {
           onSuccess={carregarDashboard}
           userId={user?.id ?? 1}
           programas={dashboard.programas}
+          cards={cards}
         />
       )}
       {modalAberto === 'transferir' && (

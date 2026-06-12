@@ -2,21 +2,23 @@ import { useState } from 'react';
 import { Loader, CheckCircle } from 'lucide-react';
 import { Modal } from './Modal';
 import { rewardTransactionService } from '../../services/rewardTransactionService';
-import { DashboardPrograma } from '../../types';
+import { CreditCard, DashboardPrograma } from '../../types';
 
 interface AdicionarMilhasModalProps {
   onClose: () => void;
   onSuccess: () => void;
   userId: number;
   programas: DashboardPrograma[];
+  cards: CreditCard[];
 }
 
-export function AdicionarMilhasModal({ onClose, onSuccess, userId, programas }: AdicionarMilhasModalProps) {
+export function AdicionarMilhasModal({ onClose, onSuccess, userId, programas, cards }: AdicionarMilhasModalProps) {
   const hoje = new Date().toISOString().split('T')[0];
 
   const [date, setDate]           = useState(hoje);
   const [amount, setAmount]       = useState('');
   const [miles, setMiles]         = useState('');
+  const [cardId, setCardId]       = useState<number | ''>('');
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess]     = useState(false);
   const [error, setError]         = useState<string | null>(null);
@@ -30,15 +32,16 @@ export function AdicionarMilhasModal({ onClose, onSuccess, userId, programas }: 
     const milesNum  = Number(miles);
     const amountNum = Number(amount.replace(',', '.'));
 
-    if (!date)              return setError('Informe a data.');
-    if (amountNum <= 0)     return setError('Informe um valor válido.');
-    if (milesNum <= 0)      return setError('Informe a quantidade de milhas.');
+    if (!date)          return setError('Informe a data.');
+    if (amountNum <= 0) return setError('Informe um valor válido.');
+    if (milesNum <= 0)  return setError('Informe a quantidade de milhas.');
+    if (cardId === '')  return setError('Selecione um cartão.');
 
     setIsLoading(true);
     try {
       await rewardTransactionService.criar({
         userId,
-        creditCardId: 1,
+        creditCardId: cardId,
         date: new Date(date).toISOString(),
         amount: amountNum,
         milesEarned: milesNum,
@@ -74,6 +77,27 @@ export function AdicionarMilhasModal({ onClose, onSuccess, userId, programas }: 
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
+
+        <div>
+          <label className="block text-sm text-[#2C2C2C] mb-1.5">Cartão</label>
+          <select
+            value={cardId}
+            onChange={e => setCardId(e.target.value === '' ? '' : Number(e.target.value))}
+            disabled={isLoading}
+            className={inputClass}
+          >
+            <option value="">Selecione um cartão</option>
+            {cards.map(card => (
+              <option key={card.id} value={card.id}>
+                {card.brand} — {card.cardNumber}
+              </option>
+            ))}
+          </select>
+          {cards.length === 0 && (
+            <p className="mt-1 text-xs text-[#C5A46A]">Nenhum cartão cadastrado. Adicione um em "Cartões".</p>
+          )}
+        </div>
+
         <div>
           <label className="block text-sm text-[#2C2C2C] mb-1.5">Data da compra</label>
           <input
